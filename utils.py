@@ -8,8 +8,8 @@ import os
 
 MODEL_DIR = 'saved_models'
 
-def load_data():
-    uploaded_file = st.file_uploader("Upload a CSV file", type="csv")
+def load_data(key="file_uploader"):
+    uploaded_file = st.file_uploader("Upload a CSV file", type="csv", key=key)
     if uploaded_file is not None:
         data = pd.read_csv(uploaded_file)
         st.write(data.head())
@@ -20,7 +20,10 @@ def select_features(data):
     if len(data.columns) > 1:
         target_column = st.selectbox("Select the target variable", data.columns)
         feature_columns = st.multiselect("Select the feature columns", data.columns.drop(target_column))
-        return target_column, feature_columns
+        if target_column and feature_columns:
+            return target_column, feature_columns
+        else:
+            st.error("Please select both target and feature columns.")
     else:
         st.error("The dataset needs to have more than one column to build a model.")
     return None, None
@@ -49,25 +52,18 @@ def display_predictions(y_test, y_pred):
     results = pd.DataFrame({"Actual values": y_test, "Predictions": y_pred})
     st.write(results.head())
 
-# Ensure the directory exists
-if not os.path.exists(MODEL_DIR):
-    os.makedirs(MODEL_DIR)
-
 def save_model(model, model_name):
-    if not os.path.exists(MODEL_DIR):
-        os.makedirs(MODEL_DIR)
-    
     if not model_name.endswith('.pkl'):
         model_name += '.pkl'
     
     filename = os.path.join(MODEL_DIR, model_name)
     
     try:
-        st.joblib.dump(model, filename)
-        print(f"Model saved successfully at {filename}")
+        joblib.dump(model, filename)
+        st.success(f"Model saved successfully at {filename}")
         return filename
     except Exception as e:
-        print(f"Error saving model: {e}")
+        st.error(f"Error saving model: {e}")
         return None
 
 def load_model(model_name):
@@ -80,5 +76,3 @@ def load_model(model_name):
 
 def list_saved_models():
     return [f for f in os.listdir(MODEL_DIR) if f.endswith('.pkl')]
-
-
