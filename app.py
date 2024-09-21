@@ -2,9 +2,30 @@ import streamlit as st
 import pandas as pd
 from utils import load_data, select_features, select_model, display_predictions, save_model, load_model, list_saved_models
 from model_utils import train_model, evaluate_regression, evaluate_classification
+import os
+
+MODEL_DIR = 'saved_models'
+if not os.path.exists(MODEL_DIR):
+    os.makedirs(MODEL_DIR)
 
 def main():
     st.title("Model Training, Saving, and Predictions App")
+
+    # Инициализируем session_state, если ещё не инициализировано
+    if 'model_trained' not in st.session_state:
+        st.session_state['model_trained'] = False
+
+    if 'trained_model' not in st.session_state:
+        st.session_state['trained_model'] = None
+    
+    if 'X_test' not in st.session_state:
+        st.session_state['X_test'] = None
+
+    if 'y_test' not in st.session_state:
+        st.session_state['y_test'] = None
+
+    if 'y_pred' not in st.session_state:
+        st.session_state['y_pred'] = None
 
     # Load data
     data = load_data(key="upload_data")
@@ -24,6 +45,13 @@ def main():
                 st.write(f"### Training {model_name}")
                 model, X_test, y_test, y_pred = train_model(model, X, y)
                 
+                # Сохраняем результаты в session_state
+                st.session_state['trained_model'] = model
+                st.session_state['X_test'] = X_test
+                st.session_state['y_test'] = y_test
+                st.session_state['y_pred'] = y_pred
+                st.session_state['model_trained'] = True
+                
                 # Display results and metrics
                 display_predictions(y_test, y_pred)
                 
@@ -32,19 +60,23 @@ def main():
                     evaluate_regression(y_test, y_pred, model_name)
                 else:
                     evaluate_classification(y_test, y_pred, model_name)
-                
-                # Save model
-                model_filename = st.text_input("Enter a name to save your model (e.g., 'my_model.pkl'):")
-                if st.button("Save Model"):
-                    if model_filename:
-                        if not model_filename.endswith('.pkl'):
-                            model_filename += '.pkl'
-                        save_model(model, model_filename)
-                        st.success(f"Model saved as {model_filename}")
-                    else:
-                        st.error("Please provide a valid model name.")
+
+    # Отображение кнопки сохранения только если модель была обучена
+    if st.session_state['model_trained']:
+        model_filename = st.text_input("Enter a name to save your model (e.g., 'my_model.pkl'):")
+        
+        if st.button('Save Model'):
+            if model_filename:
+                if not model_filename.endswith('.pkl'):
+                    model_filename += '.pkl'
+                save_model(st.session_state['trained_model'], model_filename)
+                st.success(f"Model saved as {model_filename}")
+                # Сохраняем состояние модели
+                st.session_state['model_saved'] = True
+            else:
+                st.error("Please provide a valid model name.")
     
-    elif model_choice == "Use Saved Model":
+    if model_choice == "Use Saved Model":
         st.header("Load and Use Saved Model")
         saved_models = list_saved_models()
         model_file = st.selectbox("Select a saved model:", saved_models)

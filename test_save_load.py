@@ -1,46 +1,33 @@
-import joblib
-import pickle
-from sklearn.datasets import load_iris
-from sklearn.linear_model import LogisticRegression
-import os
 import streamlit as st
+from sklearn.datasets import load_iris
+from sklearn.ensemble import RandomForestClassifier
+import joblib
+import os
 
-MODEL_DIR = 'saved_models'
+# Загружаем данные
+iris = load_iris()
+X, y = iris.data, iris.target
 
-if not os.path.exists(MODEL_DIR):
-    os.makedirs(MODEL_DIR)
-    st.write(f"Directory created: {MODEL_DIR}")
-else:
-    st.write(f"Directory already exists: {MODEL_DIR}")
+# Создаем модель
+model = RandomForestClassifier()
+model.fit(X, y)
 
-def save_model(model, model_name):
-    if not model_name.endswith('.pkl'):
-        model_name += '.pkl'
-    filename = os.path.abspath(os.path.join(MODEL_DIR, model_name))
-    try:
-        with open(filename, 'wb') as f:
-            pickle.dump(model, f)
-        st.success(f"Model successfully saved as {filename}")
-    except Exception as e:
-        st.error(f"Error saving model: {e}")
+# Функция для сохранения модели
+def save_model(model, filename):
+    if not os.path.exists('saved_models'):
+        os.makedirs('saved_models')
+    joblib.dump(model, f'saved_models/{filename}.pkl')
 
-def main():
-    st.title("Model Save Test")
+# Интерфейс Streamlit
+st.title('Сохранение ML модели')
+filename = st.text_input('Введите имя для сохранения модели')
 
-    if st.button("Create and Train Model"):
-        iris = load_iris()
-        X, y = iris.data, iris.target
+if st.button('Сохранить модель'):
+    save_model(model, filename)
+    st.success(f'Модель сохранена как {filename}.pkl')
 
-        model = LogisticRegression(max_iter=200)
-        model.fit(X, y)
-
-        model_name = st.text_input("Enter a name to save your model (e.g., 'my_model.pkl'):")
-
-        if st.button("Save Model"):
-            if model_name:
-                save_model(model, model_name)
-            else:
-                st.error("Please provide a valid model name.")
-
-if __name__ == "__main__":
-    main()
+# Показать список сохраненных моделей
+st.subheader('Сохраненные модели:')
+saved_models = os.listdir('saved_models') if os.path.exists('saved_models') else []
+for model_file in saved_models:
+    st.write(model_file)

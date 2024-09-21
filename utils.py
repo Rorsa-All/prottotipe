@@ -53,8 +53,6 @@ def display_predictions(y_test, y_pred):
     st.write(results.head())
 
 def save_model(model, model_name):
-    if not model_name.endswith('.pkl'):
-        model_name += '.pkl'
     
     filename = os.path.join(MODEL_DIR, model_name)
     
@@ -76,3 +74,17 @@ def load_model(model_name):
 
 def list_saved_models():
     return [f for f in os.listdir(MODEL_DIR) if f.endswith('.pkl')]
+
+if not os.path.exists(MODEL_DIR):
+    os.makedirs(MODEL_DIR)
+
+data = load_data()
+if data is not None:
+    target_column, feature_columns = select_features(data)
+    if target_column and feature_columns:
+        model_name, model = select_model()
+        X = data[feature_columns]
+        y = data[target_column]
+        model.fit(X, y)
+        save_model(model, model_name)
+        st.write(f"Model {model_name} trained and saved successfully.")
