@@ -11,6 +11,7 @@ MODEL_DIR = 'saved_models'
 def load_data(key="file_uploader"):
     uploaded_file = st.file_uploader("Upload a CSV file", type="csv", key=key)
     if uploaded_file is not None:
+        st.session_state[f"{key}_file_name"] = uploaded_file.name
         data = pd.read_csv(uploaded_file)
         st.write(data.head())
         return data
